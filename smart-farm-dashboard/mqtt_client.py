@@ -1,6 +1,5 @@
 import threading
 import ssl
-import socket
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
 
@@ -10,8 +9,8 @@ MQTT_BROKER    = "da704a6633684c3babbb04059852362e.s1.eu.hivemq.cloud"
 MQTT_PORT      = 8883
 MQTT_KEEPALIVE = 60
 
-MQTT_USERNAME  = "YOUR_HIVEMQ_USERNAME"  # ← Replace
-MQTT_PASSWORD  = "YOUR_HIVEMQ_PASSWORD"  # ← Replace
+MQTT_USERNAME  = "Nthama"  # ← Replace
+MQTT_PASSWORD  = "Ntharm!n@ter2023"  # ← Replace
 
 
 # ── UNIQUE TOPICS ─────────────────────────────────────────────────
@@ -34,24 +33,18 @@ def register_message_callback(callback):
 
 
 def _on_connect(client, userdata, flags, reason_code, properties=None):
-    if reason_code == 0:
+    # paho-mqtt v2 fix: use str() to check reason code
+    rc_str = str(reason_code)
+
+    if rc_str == "Success":
         print(f"[MQTT] ✓ Connected to HiveMQ Cloud: {MQTT_BROKER}")
         for t in SUBSCRIBE_TOPICS:
             client.subscribe(t, qos=1)
             print(f"[MQTT]   → Subscribed to {t}")
     else:
-        error_messages = {
-            1: "Connection refused - incorrect protocol version",
-            2: "Connection refused - invalid client identifier",
-            3: "Connection refused - server unavailable",
-            4: "Connection refused - bad username or password",
-            5: "Connection refused - not authorized"
-        }
-        error = error_messages.get(reason_code, f"Unknown error code {reason_code}")
-        print(f"[MQTT] ✗ Connection failed: {error}")
-        if reason_code == 4:
+        print(f"[MQTT] ✗ Connection failed: {rc_str}")
+        if "bad user name" in rc_str.lower() or "not authorized" in rc_str.lower():
             print("[MQTT]   → Check MQTT_USERNAME and MQTT_PASSWORD")
-
 
 def _on_message(client, userdata, message):
     payload = message.payload.decode("utf-8")
@@ -80,7 +73,7 @@ def start_mqtt():
     # Authentication
     _client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
-    # Use the SAME SSL context that passed the SSL OK test
+    # TLS/SSL
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = True
     ssl_context.verify_mode = ssl.CERT_REQUIRED

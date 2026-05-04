@@ -4,10 +4,13 @@ import hvplot.pandas  # noqa
 from mqtt_client import start_mqtt, register_message_callback, publish_command
 from db import init_db, log_measurement, get_recent_measurements
 
-pn.extension("hvplot", design="material")
+
+pn.extension(design="material")  # ← Removed "hvplot" from extension
+
 
 # ── DATABASE ──────────────────────────────────────────────────────
 init_db()
+
 
 # ── LIVE DISPLAY PANES ────────────────────────────────────────────
 temp_pane  = pn.pane.Str("Temperature : -- °C")
@@ -40,7 +43,7 @@ start_mqtt()
 def make_plot(topic, label, color):
     rows = get_recent_measurements(topic)
     if not rows:
-        return pn.pane.Markdown(f"No {label} history yet.")
+        return pn.pane.Markdown(f"*No {label} history yet. Waiting for data...*")
     df = pd.DataFrame(rows, columns=["timestamp", "value"])
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     return df.hvplot.line(
@@ -111,11 +114,11 @@ history_tab = pn.Column(
 )
 
 app = pn.Column(
-    "# Smart Farm IoT Dashboard",
+    "# 🌱 Smart Farm IoT Dashboard",
     pn.Tabs(
-        ("Live",     live_tab),
-        ("Controls", controls_tab),
-        ("History",  history_tab),
+        ("🌡 Live",      live_tab),
+        ("🎛 Controls",  controls_tab),
+        ("📈 History",   history_tab),
     ),
 )
 

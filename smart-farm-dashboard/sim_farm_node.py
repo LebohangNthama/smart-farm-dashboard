@@ -38,14 +38,15 @@ ACTIONS = {
 }
 
 
-def on_connect(client, userdata, flags, rc, properties=None):
-    if rc == 0:
+def on_connect(client, userdata, flags, reason_code, properties=None):
+    rc_str = str(reason_code)
+
+    if rc_str == "Success":
         print(f"[SIM] ✓ Connected to HiveMQ Cloud: {BROKER}")
-        client.subscribe(CMD_TOPIC)
+        client.subscribe(CMD_TOPIC, qos=1)
         print(f"[SIM] Listening for commands on {CMD_TOPIC}\n")
     else:
-        print(f"[SIM] ✗ Connection failed (rc={rc})")
-
+        print(f"[SIM] ✗ Connection failed: {rc_str}")
 
 def on_message(client, userdata, message):
     cmd    = message.payload.decode("utf-8")
@@ -75,9 +76,7 @@ print(f"[SIM] Connecting to {BROKER}:{PORT}...")
 client.connect(BROKER, PORT, 60)
 client.loop_start()
 
-# Wait for connection
 time.sleep(2)
-
 print("[SIM] Simulator running. Press Ctrl+C to stop.\n")
 
 
