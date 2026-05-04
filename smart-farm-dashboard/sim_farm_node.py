@@ -1,12 +1,15 @@
 import time
 import random
+import ssl
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
 
 
-# ── MOSQUITTO PUBLIC BROKER ───────────────────────────────────────
-BROKER = "test.mosquitto.org"
-PORT   = 1883  # Plain — works on PythonAnywhere FREE tier
+# ── CLOUDAMQP LAVINMQ ─────────────────────────────────────────────
+BROKER   = "chameleon.lmq.cloudamqp.com"
+PORT     = 8883
+USERNAME = "ygmtijpl:ygmtijpl"
+PASSWORD = "Qvl3fhaA1Z8Mnaeo6i60aUISpRrozMPW"
 
 
 # ── UNIQUE TOPICS ─────────────────────────────────────────────────
@@ -21,8 +24,6 @@ TOPICS = {
 
 CMD_TOPIC = "ROLETTA/FARM/CMD"
 
-
-# ── COMMAND MAP ───────────────────────────────────────────────────
 ACTIONS = {
     'a': "LED ON",
     'A': "LED OFF",
@@ -38,7 +39,7 @@ ACTIONS = {
 def on_connect(client, userdata, flags, reason_code, properties=None):
     rc_str = str(reason_code)
     if rc_str == "Success":
-        print(f"[SIM] ✓ Connected to Mosquitto: {BROKER}")
+        print(f"[SIM] ✓ Connected to LavinMQ: {BROKER}")
         client.subscribe(CMD_TOPIC, qos=1)
         print(f"[SIM] Listening for commands on {CMD_TOPIC}\n")
     else:
@@ -57,7 +58,11 @@ client = mqtt.Client(
     client_id="RolettaSimFarmNode"
 )
 
-# No TLS or authentication needed for Mosquitto
+client.username_pw_set(USERNAME, PASSWORD)
+
+ssl_context = ssl.create_default_context()
+client.tls_set_context(ssl_context)
+
 client.on_connect = on_connect
 client.on_message = on_message
 

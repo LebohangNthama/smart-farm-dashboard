@@ -1,16 +1,15 @@
 import threading
+import ssl
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
 
 
-# ── MOSQUITTO PUBLIC BROKER ───────────────────────────────────────
-MQTT_BROKER    = "test.mosquitto.org"
-MQTT_PORT      = 1883  # Plain — works on PythonAnywhere FREE tier
+# ── CLOUDAMQP LAVINMQ — Whitelisted on PythonAnywhere FREE ───────
+MQTT_BROKER    = "chameleon.lmq.cloudamqp.com"
+MQTT_PORT      = 8883
 MQTT_KEEPALIVE = 60
-
-# No username/password needed for Mosquitto public broker
-MQTT_USERNAME  = ""
-MQTT_PASSWORD  = ""
+MQTT_USERNAME  = "ygmtijpl:ygmtijpl"
+MQTT_PASSWORD  = "Qvl3fhaA1Z8Mnaeo6i60aUISpRrozMPW"
 
 
 # ── UNIQUE TOPICS ─────────────────────────────────────────────────
@@ -34,9 +33,8 @@ def register_message_callback(callback):
 
 def _on_connect(client, userdata, flags, reason_code, properties=None):
     rc_str = str(reason_code)
-
     if rc_str == "Success":
-        print(f"[MQTT] ✓ Connected to Mosquitto: {MQTT_BROKER}")
+        print(f"[MQTT] ✓ Connected to LavinMQ: {MQTT_BROKER}")
         for t in SUBSCRIBE_TOPICS:
             client.subscribe(t, qos=1)
             print(f"[MQTT]   → Subscribed to {t}")
@@ -54,7 +52,7 @@ def _on_message(client, userdata, message):
 
 def _on_disconnect(client, userdata, rc):
     if rc != 0:
-        print(f"[MQTT] ⚠ Unexpected disconnection (code {rc})")
+        print(f"[MQTT] ⚠ Disconnected (code {rc})")
 
 
 def start_mqtt():
@@ -68,15 +66,15 @@ def start_mqtt():
         client_id="RolettaSmartFarmDashboard"
     )
 
-    # No TLS needed for Mosquitto port 1883
-    # No authentication needed
+    _client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 
-    # Callbacks
+    ssl_context = ssl.create_default_context()
+    _client.tls_set_context(ssl_context)
+
     _client.on_connect    = _on_connect
     _client.on_message    = _on_message
     _client.on_disconnect = _on_disconnect
 
-    # Connect
     print(f"[MQTT] Connecting to {MQTT_BROKER}:{MQTT_PORT}...")
     try:
         _client.connect(MQTT_BROKER, port=MQTT_PORT, keepalive=MQTT_KEEPALIVE)
