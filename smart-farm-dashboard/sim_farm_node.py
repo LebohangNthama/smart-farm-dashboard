@@ -1,10 +1,16 @@
 import time
 import random
+import ssl
 import paho.mqtt.client as mqtt
+from paho.mqtt.client import CallbackAPIVersion
+
 
 # ── BROKER SETTINGS ──────────────────────────────────────────────
-BROKER = "broker.hivemq.com"
-PORT   = 1883
+BROKER   = "da704a6633684c3babbb04059852362e.s1.eu.hivemq.cloud"
+PORT     = 8883
+USERNAME = "Nthama"  # ← Same as mqtt_client.py
+PASSWORD = "Ntharm!n@ter2023"  # ← Same as mqtt_client.py
+
 
 # ── UNIQUE TOPICS ─────────────────────────────────────────────────
 TOPICS = {
@@ -17,6 +23,7 @@ TOPICS = {
 }
 
 CMD_TOPIC = "ROLETTA/FARM/CMD"
+
 
 # ── COMMAND MAP ───────────────────────────────────────────────────
 ACTIONS = {
@@ -32,9 +39,12 @@ ACTIONS = {
 
 
 def on_connect(client, userdata, flags, rc, properties=None):
-    print(f"[SIM] Connected to broker (rc={rc})")
-    client.subscribe(CMD_TOPIC)
-    print(f"[SIM] Listening for commands on {CMD_TOPIC}")
+    if rc == 0:
+        print(f"[SIM] ✓ Connected to HiveMQ Cloud: {BROKER}")
+        client.subscribe(CMD_TOPIC)
+        print(f"[SIM] Listening for commands on {CMD_TOPIC}\n")
+    else:
+        print(f"[SIM] ✗ Connection failed (rc={rc})")
 
 
 def on_message(client, userdata, message):
@@ -44,13 +54,32 @@ def on_message(client, userdata, message):
 
 
 # ── CLIENT SETUP ──────────────────────────────────────────────────
-client = mqtt.Client(client_id="SimFarmNode")
+client = mqtt.Client(
+    CallbackAPIVersion.VERSION2,
+    client_id="RolettaSimFarmNode"
+)
+
+# Authentication
+client.username_pw_set(USERNAME, PASSWORD)
+
+# TLS/SSL
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = True
+ssl_context.verify_mode = ssl.CERT_REQUIRED
+client.tls_set_context(ssl_context)
+
 client.on_connect = on_connect
 client.on_message = on_message
+
+print(f"[SIM] Connecting to {BROKER}:{PORT}...")
 client.connect(BROKER, PORT, 60)
 client.loop_start()
 
+# Wait for connection
+time.sleep(2)
+
 print("[SIM] Simulator running. Press Ctrl+C to stop.\n")
+
 
 # ── PUBLISH LOOP ──────────────────────────────────────────────────
 try:
@@ -62,12 +91,12 @@ try:
         water = random.randint(10, 100)
         rain  = random.randint(0,  100)
 
-        client.publish(TOPICS["temp"],  str(temp))
-        client.publish(TOPICS["hum"],   str(hum))
-        client.publish(TOPICS["soil"],  str(soil))
-        client.publish(TOPICS["light"], str(light))
-        client.publish(TOPICS["water"], str(water))
-        client.publish(TOPICS["rain"],  str(rain))
+        client.publish(TOPICS["temp"],  str(temp),  qos=1)
+        client.publish(TOPICS["hum"],   str(hum),   qos=1)
+        client.publish(TOPICS["soil"],  str(soil),  qos=1)
+        client.publish(TOPICS["light"], str(light), qos=1)
+        client.publish(TOPICS["water"], str(water), qos=1)
+        client.publish(TOPICS["rain"],  str(rain),  qos=1)
 
         print(
             f"[SIM] Published → "

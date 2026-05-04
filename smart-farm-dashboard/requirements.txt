@@ -1,5 +1,8 @@
-panel
-hvplot
-bokeh
-pandas
-paho-mqtt
+panel>=1.3.0
+hvplot>=0.9.0
+bokeh>=3.0.0
+pandas>=2.0.0
+paho-mqtt>=2.0.0
+plotly>=6.0.0
+numpy>=2.0.0
+certifi
