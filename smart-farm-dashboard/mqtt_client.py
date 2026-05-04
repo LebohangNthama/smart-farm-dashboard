@@ -1,15 +1,21 @@
 import threading
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
+import ssl
 
-# ── BROKER SETTINGS ──────────────────────────────────────────────
-MQTT_BROKER    = "broker.hivemq.com"
-MQTT_PORT      = 1883
+
+# ── HIVEMQ CLOUD BROKER SETTINGS ──────────────────────────────────
+MQTT_BROKER    = "da704a6633684c3babbb04059852362e.s1.eu.hivemq.cloud"
+MQTT_PORT      = 8883  # TLS/SSL secure port
 MQTT_KEEPALIVE = 60
 
+# TODO: Get these credentials from HiveMQ Cloud Console > Access Management
+MQTT_USERNAME  = "Nthama"  # ← Replace with your username
+MQTT_PASSWORD  = "Ntharm!n@ter2023"  # ← Replace with your password
+
+
 # ── UNIQUE TOPICS ─────────────────────────────────────────────────
-# ROLETTA/FARM/ prefix makes these unique on the public broker
-# so no other user's data mixes with yours
+# Your ROLETTA/FARM/ prefix is perfect - keeps your data separate
 SUBSCRIBE_TOPICS = [
     "ROLETTA/FARM/TEMPERATURE",
     "ROLETTA/FARM/HUMIDITY",
@@ -18,6 +24,7 @@ SUBSCRIBE_TOPICS = [
     "ROLETTA/FARM/WATERLEVEL",
     "ROLETTA/FARM/RAINFALL",
 ]
+
 
 _client = None
 _message_callbacks = []
@@ -28,38 +35,25 @@ def register_message_callback(callback):
 
 
 def _on_connect(client, userdata, flags, reason_code, properties=None):
-    print(f"[MQTT] Connected: {reason_code}")
-    for t in SUBSCRIBE_TOPICS:
-        client.subscribe(t)
-        print(f"[MQTT] Subscribed to {t}")
+    if reason_code == 0:
+        print(f"[MQTT] ✓ Connected to HiveMQ Cloud: {MQTT_BROKER}")
+        for t in SUBSCRIBE_TOPICS:
+            client.subscribe(t, qos=1)
+            print(f"[MQTT]   → Subscribed to {t}")
+    else:
+        # Detailed error messages
+        error_messages = {
+            1: "Connection refused - incorrect protocol version",
+            2: "Connection refused - invalid client identifier",
+            3: "Connection refused - server unavailable",
+            4: "Connection refused - bad username or password",
+            5: "Connection refused - not authorized"
+        }
+        error = error_messages.get(reason_code, f"Unknown error code {reason_code}")
+        print(f"[MQTT] ✗ Connection failed: {error}")
+        if reason_code == 4:
+            print(f"[MQTT]   → Check MQTT_USERNAME and MQTT_PASSWORD in this file")
 
 
 def _on_message(client, userdata, message):
-    payload = message.payload.decode("utf-8")
-    topic   = message.topic
-    print(f"[MQTT] {topic} => {payload}")
-    for cb in _message_callbacks:
-        cb(topic, payload)
-
-
-def start_mqtt():
-    global _client
-    if _client is not None:
-        return
-    _client = mqtt.Client(
-        CallbackAPIVersion.VERSION2,
-        client_id="SmartFarmDashboard"
-    )
-    _client.on_connect = _on_connect
-    _client.on_message = _on_message
-    _client.connect(MQTT_BROKER, port=MQTT_PORT, keepalive=MQTT_KEEPALIVE)
-    thread = threading.Thread(target=_client.loop_forever, daemon=True)
-    thread.start()
-    print("[MQTT] Connected to public broker")
-
-
-def publish_command(topic, payload):
-    if _client is None:
-        raise RuntimeError("Call start_mqtt() first.")
-    _client.publish(topic, payload)
-    print(f"[MQTT] Published '{payload}' to '{topic}'")
+    payload = message.payload.d
