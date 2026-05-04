@@ -1,15 +1,12 @@
 import time
 import random
-import ssl
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
 
 
-# ── BROKER SETTINGS ──────────────────────────────────────────────
-BROKER   = "da704a6633684c3babbb04059852362e.s1.eu.hivemq.cloud"
-PORT     = 8883
-USERNAME = "Nthama"  # ← Same as mqtt_client.py
-PASSWORD = "Ntharm!n@ter2023"  # ← Same as mqtt_client.py
+# ── MOSQUITTO PUBLIC BROKER ───────────────────────────────────────
+BROKER = "test.mosquitto.org"
+PORT   = 1883  # Plain — works on PythonAnywhere FREE tier
 
 
 # ── UNIQUE TOPICS ─────────────────────────────────────────────────
@@ -40,13 +37,13 @@ ACTIONS = {
 
 def on_connect(client, userdata, flags, reason_code, properties=None):
     rc_str = str(reason_code)
-
     if rc_str == "Success":
-        print(f"[SIM] ✓ Connected to HiveMQ Cloud: {BROKER}")
+        print(f"[SIM] ✓ Connected to Mosquitto: {BROKER}")
         client.subscribe(CMD_TOPIC, qos=1)
         print(f"[SIM] Listening for commands on {CMD_TOPIC}\n")
     else:
         print(f"[SIM] ✗ Connection failed: {rc_str}")
+
 
 def on_message(client, userdata, message):
     cmd    = message.payload.decode("utf-8")
@@ -60,15 +57,7 @@ client = mqtt.Client(
     client_id="RolettaSimFarmNode"
 )
 
-# Authentication
-client.username_pw_set(USERNAME, PASSWORD)
-
-# TLS/SSL
-ssl_context = ssl.create_default_context()
-ssl_context.check_hostname = True
-ssl_context.verify_mode = ssl.CERT_REQUIRED
-client.tls_set_context(ssl_context)
-
+# No TLS or authentication needed for Mosquitto
 client.on_connect = on_connect
 client.on_message = on_message
 

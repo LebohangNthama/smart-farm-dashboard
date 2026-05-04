@@ -1,16 +1,16 @@
 import threading
-import ssl
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import CallbackAPIVersion
 
 
-# ── HIVEMQ CLOUD BROKER SETTINGS ──────────────────────────────────
-MQTT_BROKER    = "da704a6633684c3babbb04059852362e.s1.eu.hivemq.cloud"
-MQTT_PORT      = 8883
+# ── MOSQUITTO PUBLIC BROKER ───────────────────────────────────────
+MQTT_BROKER    = "test.mosquitto.org"
+MQTT_PORT      = 1883  # Plain — works on PythonAnywhere FREE tier
 MQTT_KEEPALIVE = 60
 
-MQTT_USERNAME  = "Nthama"  # ← Replace
-MQTT_PASSWORD  = "Ntharm!n@ter2023"  # ← Replace
+# No username/password needed for Mosquitto public broker
+MQTT_USERNAME  = ""
+MQTT_PASSWORD  = ""
 
 
 # ── UNIQUE TOPICS ─────────────────────────────────────────────────
@@ -33,18 +33,16 @@ def register_message_callback(callback):
 
 
 def _on_connect(client, userdata, flags, reason_code, properties=None):
-    # paho-mqtt v2 fix: use str() to check reason code
     rc_str = str(reason_code)
 
     if rc_str == "Success":
-        print(f"[MQTT] ✓ Connected to HiveMQ Cloud: {MQTT_BROKER}")
+        print(f"[MQTT] ✓ Connected to Mosquitto: {MQTT_BROKER}")
         for t in SUBSCRIBE_TOPICS:
             client.subscribe(t, qos=1)
             print(f"[MQTT]   → Subscribed to {t}")
     else:
         print(f"[MQTT] ✗ Connection failed: {rc_str}")
-        if "bad user name" in rc_str.lower() or "not authorized" in rc_str.lower():
-            print("[MQTT]   → Check MQTT_USERNAME and MQTT_PASSWORD")
+
 
 def _on_message(client, userdata, message):
     payload = message.payload.decode("utf-8")
@@ -70,14 +68,8 @@ def start_mqtt():
         client_id="RolettaSmartFarmDashboard"
     )
 
-    # Authentication
-    _client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-
-    # TLS/SSL
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = True
-    ssl_context.verify_mode = ssl.CERT_REQUIRED
-    _client.tls_set_context(ssl_context)
+    # No TLS needed for Mosquitto port 1883
+    # No authentication needed
 
     # Callbacks
     _client.on_connect    = _on_connect
@@ -92,7 +84,6 @@ def start_mqtt():
         thread.start()
     except Exception as e:
         print(f"[MQTT] ✗ Connection error: {e}")
-        print(f"[MQTT]   → Check broker URL and credentials")
 
 
 def publish_command(topic, payload):
